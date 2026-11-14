@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 from PIL import Image, ImageDraw, ImageFont
 import streamlit as st
-from streamlit_drawable_canvas import st_canvas
+from canvas_component import st_responsive_canvas
 
 # Setup path
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -21,7 +21,10 @@ from predict import predict_digit, load_model, MODEL_PATH, CHARACTER_MODEL_PATH,
 
 import preprocessing
 importlib.reload(preprocessing)
-from preprocessing import preprocess_image
+from preprocessing import preprocess_image, check_drawing_quality
+
+from feedback_manager import save_user_feedback, get_feedback_statistics
+from retrain_with_feedback import retrain_ensemble_with_feedback
 
 import validation
 importlib.reload(validation)
@@ -102,7 +105,10 @@ with st.sidebar:
 
     st.markdown("---")
     st.markdown("### ⚙️ Drawing Settings")
-    stroke_width = st.slider("Brush Stroke Width", min_value=10, max_value=32, value=18, step=2)
+    stroke_width = st.slider("Brush Stroke Width (px)", min_value=10, max_value=32, value=20, step=2, help="Default 20px calibrated to training set stroke width")
+    canvas_size = st.slider("Canvas Viewport (px)", min_value=280, max_value=400, value=340, step=20, help="Responsive square canvas size")
+    auto_predict = st.toggle("⚡ Auto-Predict on Pen Lift", value=True, help="Debounced inference runs automatically ~400ms after stroke completion")
+    auto_thicken = st.toggle("🪄 Auto-Thicken Thin Strokes", value=False, help="Dilates strokes that are thinner than the training set distribution")
 
 # -----------------------------
 # Header & Use Cases Guide
@@ -128,9 +134,10 @@ except Exception as e:
 
 if model_ready:
     # Top-Level Navigation Tabs
-    app_tab_single, app_tab_bench = st.tabs([
+    app_tab_single, app_tab_bench, app_tab_feedback = st.tabs([
         "✏️ Single Character Recognition",
-        "📊 Model Benchmarks & Analytics"
+        "📊 Model Benchmarks & Analytics",
+        "📥 User Feedback & Retraining"
     ])
 
     # =========================================================
@@ -153,16 +160,10 @@ if model_ready:
             col_canvas, col_canvas_info = st.columns([1, 1], gap="medium")
 
             with col_canvas:
-                canvas_result = st_canvas(
-                    fill_color="rgba(255, 255, 255, 0)",
+                canvas_result = st_responsive_canvas(
                     stroke_width=stroke_width,
-                    stroke_color="#FFFFFF",
-                    background_color="#000000",
-                    height=280,
-                    width=280,
-                    drawing_mode="freedraw",
-                    return_image_data=True,
-                    update_streamlit=True,
+                    canvas_size=canvas_size,
+                    auto_predict=auto_predict,
                     key="char_draw_canvas",
                 )
 
@@ -172,15 +173,15 @@ if model_ready:
                     "- 🔢 **Digits**: `0` through `9`\n"
                     "- 🔤 **Letters**: Both **Capital** (`A–Z`) and **Small** (`a–z`) are recognized!\n"
                     "- ➕ **Symbols**: `+`, `-`, `*`, `/`, `=`, `?`, `!`, `#`, `@`, `$`, `%`, `&`\n"
-                    "- Draw a single character centered in the box.\n"
+                    "- Draw a single character centered in the faint guide box.\n"
+                    "- Use **Undo**, **Redo**, or **Eraser** directly from the canvas toolbar.\n"
                     "- Multi-character strings (e.g. words like `cat` or numbers like `72`) are restricted."
                 )
 
-                if canvas_result is not None:
+                if canvas_result is not None and canvas_result.has_drawing:
                     try:
-                        img_data = canvas_result.image_data
-                        if img_data is not None and np.max(img_data[:, :, :3]) > 20:
-                            selected_image = Image.fromarray(img_data.astype("uint8"), "RGBA")
+                        if canvas_result.image is not None:
+                            selected_image = canvas_result.image
                             input_source = "Drawn Canvas"
                             if "active_sample" in st.session_state:
                                 del st.session_state["active_sample"]
@@ -301,7 +302,8 @@ if model_ready:
                 predicted_label, confidence, probabilities, individual_preds, top_candidates, category = predict_digit(
                     selected_image,
                     weights=custom_weights,
-                    voting_mode=voting_mode
+                    voting_mode=voting_mode,
+                    auto_thicken=auto_thicken
                 )
 
                 # Step 3: Confidence / OOD Validation
@@ -319,17 +321,25 @@ if model_ready:
                     with col_warn:
                         render_template("validation_error_box.html", title=ood_title, description=ood_desc)
                 else:
-                    col_img, col_pred, col_prob = st.columns([1, 1.2, 1.8], gap="large")
+                    col_img, col_pred, col_prob = st.columns([1.1, 1.2, 1.7], gap="large")
+
+                    # Preprocess for model inspection
+                    preprocessed = preprocess_image(selected_image, auto_thicken=auto_thicken)
+                    preprocessed_view = (preprocessed.reshape(28, 28) * 255).astype(np.uint8)
 
                     with col_img:
                         st.subheader("🖼️ Input Preview")
-                        st.image(selected_image, caption=input_source or "Input Image", width=200)
+                        st.image(selected_image, caption=input_source or "Input Image", width=180)
 
-                        # Show 28x28 Preprocessed view
-                        preprocessed = preprocess_image(selected_image)
-                        preprocessed_view = (preprocessed.reshape(28, 28) * 255).astype(np.uint8)
-                        st.caption("28×28 Preprocessed Feature Space")
-                        st.image(preprocessed_view, width=110)
+                        # "What the model sees" panel (A2 requirement)
+                        st.markdown("##### 🔬 What the Model Sees")
+                        st.caption("28×28 Centered & Normalized Feature Space")
+                        st.image(preprocessed_view, width=140)
+
+                        # Drawing quality hints (A3 requirement)
+                        tips = check_drawing_quality(selected_image)
+                        for tip in tips:
+                            st.caption(tip)
 
                     with col_pred:
                         st.subheader("🎯 Ensemble Result")
@@ -365,7 +375,14 @@ if model_ready:
                                         )
 
                     with col_prob:
-                        st.subheader("📊 Top Candidates")
+                        st.subheader("📊 Top Predictions")
+                        # Top-3 predictions with progress bars (A2 requirement)
+                        for r, (char_lbl, prob_val) in enumerate(top_candidates[:3]):
+                            pct = float(prob_val)
+                            st.progress(pct, text=f"**#{r+1}** `{char_lbl}` — {pct * 100:.1f}%")
+
+                        st.markdown("---")
+                        st.caption("Top 8 Probability Distribution")
                         top8_idx = np.argsort(probabilities)[-8:][::-1]
                         top8_labels = [LABEL_MAP.get(i, str(i)) for i in top8_idx]
                         top8_probs = [round(float(probabilities[i]) * 100, 2) for i in top8_idx]
@@ -374,13 +391,46 @@ if model_ready:
                             "Character": top8_labels,
                             "Probability (%)": top8_probs
                         })
-                        st.bar_chart(df_top.set_index("Character"), height=260)
+                        st.bar_chart(df_top.set_index("Character"), height=200)
 
-                        top_text = " | ".join([
-                            f"**#{r+1}** `{char}` ({prob*100:.1f}%)"
-                            for r, (char, prob) in enumerate(top_candidates[:4])
-                        ])
-                        st.markdown(f"**Top Candidates:** {top_text}")
+                    # --- Feedback Loop and Data Collection (A4 requirement) ---
+                    st.markdown("---")
+                    st.markdown("##### 📝 Active Learning & User Feedback")
+                    st.caption("Help improve the model by confirming or correcting this prediction:")
+
+                    f_col1, f_col2 = st.columns([1, 2], gap="large")
+                    with f_col1:
+                        if st.button("✅ Prediction is Correct", key="btn_feedback_correct", use_container_width=True):
+                            save_user_feedback(
+                                original_image=selected_image,
+                                preprocessed_28x28_arr=preprocessed,
+                                true_label=predicted_label,
+                                predicted_label=predicted_label,
+                                was_correct=True,
+                                stroke_data=getattr(canvas_result, "strokes", []) if canvas_result else None
+                            )
+                            st.success(f"Confirmed! Saved as '{predicted_label}' into user feedback dataset.")
+
+                    with f_col2:
+                        with st.expander("❌ Wrong? Click to specify the correct character"):
+                            all_classes_list = [LABEL_MAP[i] for i in range(48)]
+                            default_idx = all_classes_list.index(predicted_label) if predicted_label in all_classes_list else 0
+                            corrected_choice = st.selectbox(
+                                "What was the actual intended character?",
+                                options=all_classes_list,
+                                index=default_idx,
+                                key="sb_corrected_choice"
+                            )
+                            if st.button("Submit Correction", key="btn_submit_correction"):
+                                save_user_feedback(
+                                    original_image=selected_image,
+                                    preprocessed_28x28_arr=preprocessed,
+                                    true_label=corrected_choice,
+                                    predicted_label=predicted_label,
+                                    was_correct=False,
+                                    stroke_data=getattr(canvas_result, "strokes", []) if canvas_result else None
+                                )
+                                st.success(f"Correction recorded! Saved as '{corrected_choice}' into user feedback dataset.")
         else:
             st.info("👆 Draw a character/symbol, upload an image, or click any sample button above to test recognition!")
 
@@ -517,3 +567,49 @@ if model_ready:
                 new_data = generate_benchmark_metrics()
                 st.success("✅ Benchmarks updated successfully!")
                 st.rerun()
+
+    # =========================================================
+    # TAB 3: USER FEEDBACK & RETRAINING (A4 requirement)
+    # =========================================================
+    with app_tab_feedback:
+        st.subheader("📥 User Feedback Dataset & Continuous Retraining")
+        st.write(
+            "Drawings collected via user feedback are verified, labeled, and saved into "
+            "`data/user_feedback/` to continuously adapt the ensemble to real human handwriting."
+        )
+        stats = get_feedback_statistics()
+
+        col_fb1, col_fb2, col_fb3 = st.columns(3)
+        col_fb1.metric("Total Collected Samples", stats["total_samples"])
+        col_fb2.metric("Confirmed Correct", stats["correct_count"])
+        col_fb3.metric("User Corrections", stats["corrected_count"])
+
+        st.markdown("---")
+        col_fb_chart, col_fb_action = st.columns([1.6, 1], gap="large")
+
+        with col_fb_chart:
+            st.markdown("##### 🏷️ Feedback Samples by Class")
+            if stats["per_class"]:
+                df_fb = pd.DataFrame(
+                    list(stats["per_class"].items()),
+                    columns=["Class", "Samples"]
+                ).sort_values("Samples", ascending=False)
+                st.dataframe(df_fb, use_container_width=True, height=260)
+            else:
+                st.info("No feedback samples recorded yet. Draw characters in Tab 1 and click 'Correct' or 'Submit Correction' to collect samples!")
+
+        with col_fb_action:
+            st.markdown("##### ⚡ Retrain Model with Feedback")
+            st.caption("Incorporates all user feedback samples with sample weight = 4.0x into the ensemble.")
+            if st.button("🔄 Retrain Ensemble with User Feedback", key="btn_run_feedback_retrain", use_container_width=True):
+                with st.spinner("Retraining ensemble across base dataset + user feedback..."):
+                    val_acc, n_samples = retrain_ensemble_with_feedback()
+                    st.success(f"Retraining complete! {n_samples} user feedback samples integrated. Validation Accuracy: {val_acc:.2f}%")
+                    st.rerun()
+
+        if stats["recent"]:
+            st.markdown("---")
+            st.markdown("##### 🕒 Recent Feedback Entries")
+            df_rec = pd.DataFrame(stats["recent"])[["timestamp", "true_label", "predicted_label", "was_correct", "stroke_count"]]
+            df_rec["was_correct"] = df_rec["was_correct"].map({"1": "✅ Correct", "0": "❌ Corrected"})
+            st.dataframe(df_rec, use_container_width=True)

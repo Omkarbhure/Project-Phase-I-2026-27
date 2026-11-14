@@ -1,95 +1,96 @@
 {
-  "timestamp": "2026-10-26 22:26:51",
-  "total_eval_samples": 2400,
+  "timestamp": "2026-11-12T14:59:34Z",
+  "source": "Synced from models/baseline_report.json (Single Source of Truth)",
+  "total_eval_samples": 6720,
   "total_classes": 48,
   "models": {
     "lr": {
       "name": "Logistic Regression",
-      "accuracy": 74.96,
-      "precision": 77.76,
-      "recall": 74.96,
-      "f1_score": 75.73,
-      "latency_ms_per_sample": 0.002
+      "accuracy": 74.48,
+      "precision": 77.31,
+      "recall": 74.48,
+      "f1_score": 75.31,
+      "latency_ms_per_sample": 0.001
     },
     "rf": {
       "name": "Random Forest (120 Trees)",
-      "accuracy": 84.0,
-      "precision": 87.51,
-      "recall": 84.0,
-      "f1_score": 85.06,
-      "latency_ms_per_sample": 0.032
+      "accuracy": 84.39,
+      "precision": 87.87,
+      "recall": 84.39,
+      "f1_score": 85.49,
+      "latency_ms_per_sample": 0.021
     },
     "mlp": {
-      "name": "Deep Neural Net (MLP)",
-      "accuracy": 85.54,
-      "precision": 89.13,
-      "recall": 85.54,
-      "f1_score": 86.66,
-      "latency_ms_per_sample": 0.022
+      "name": "Deep Neural Net (MLP 384x192)",
+      "accuracy": 85.25,
+      "precision": 88.98,
+      "recall": 85.25,
+      "f1_score": 86.38,
+      "latency_ms_per_sample": 0.007
     },
     "ensemble": {
-      "name": "Soft Voting Ensemble (Weighted 1:3:5)",
-      "accuracy": 85.88,
-      "precision": 89.7,
-      "recall": 85.88,
-      "f1_score": 87.26,
-      "latency_ms_per_sample": 0.066
+      "name": "Soft Voting Ensemble (1:3:5)",
+      "accuracy": 85.52,
+      "precision": 89.42,
+      "recall": 85.52,
+      "f1_score": 86.88,
+      "latency_ms_per_sample": 0.027
     }
   },
   "categories": {
     "Digits (0\u20139)": {
-      "sample_count": 500,
+      "sample_count": 1400,
       "accuracy": 89.0
     },
     "Alphabets (A\u2013Z / a\u2013z)": {
-      "sample_count": 1300,
-      "accuracy": 80.38
+      "sample_count": 3640,
+      "accuracy": 79.97
     },
     "Special Symbols": {
-      "sample_count": 600,
-      "accuracy": 95.17
+      "sample_count": 1680,
+      "accuracy": 94.64
     }
   },
   "top_confused_pairs": [
     {
       "true_label": "/",
       "predicted_label": "1",
-      "count": 15
-    },
-    {
-      "true_label": "F / f",
-      "predicted_label": "L / l",
-      "count": 13
+      "count": 45
     },
     {
       "true_label": "I / i",
       "predicted_label": "L / l",
-      "count": 12
+      "count": 44
     },
     {
       "true_label": "-",
       "predicted_label": "I / i",
-      "count": 11
+      "count": 35
+    },
+    {
+      "true_label": "Z / z",
+      "predicted_label": "L / l",
+      "count": 24
+    },
+    {
+      "true_label": "F / f",
+      "predicted_label": "L / l",
+      "count": 22
     },
     {
       "true_label": "T / t",
       "predicted_label": "L / l",
-      "count": 9
+      "count": 21
     },
     {
-      "true_label": "O / o",
+      "true_label": "E / e",
       "predicted_label": "L / l",
-      "count": 8
+      "count": 21
     },
     {
-      "true_label": "L / l",
-      "predicted_label": "1",
-      "count": 8
-    },
-    {
-      "true_label": "C / c",
+      "true_label": "B / b",
       "predicted_label": "L / l",
-      "count": 7
+      "count": 20
     }
   ]
 }

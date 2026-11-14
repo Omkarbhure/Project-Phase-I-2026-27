@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Streamlit Responsive Handwritten Canvas</title>
+  <style>
+    :root {
+      --bg-color: #0F172A;
+      --card-bg: #1E293B;
+      --border-color: rgba(255, 255, 255, 0.12);
+      --accent-color: #6366F1;
+      --accent-hover: #4F46E5;
+      --text-color: #F8FAFC;
+      --text-muted: #94A3B8;
+      --danger-color: #EF4444;
+      --canvas-bg: #000000;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    body {
+      background: transparent;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      color: var(--text-color);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 4px;
+      overflow: hidden;
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 6px 10px;
+      margin-bottom: 8px;
+      max-width: 100%;
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 4px;
+      align-items: center;
+    }
+
+    .tool-btn {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--border-color);
+      color: var(--text-color);
+      border-radius: 6px;
+      padding: 5px 9px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.15s ease;
+      touch-action: manipulation;
+    }
+
+    .tool-btn:hover {
+      background: rgba(255, 255, 255, 0.12);
+    }
+
+    .tool-btn.active {
+      background: var(--accent-color);
+      border-color: var(--accent-hover);
+      color: #FFFFFF;
+      box-shadow: 0 0 8px rgba(99, 102, 241, 0.4);
+    }
+
+    .tool-btn.btn-danger:hover {
+      background: var(--danger-color);
+      border-color: var(--danger-color);
+    }
+
+    .tool-btn:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+
+    .divider {
+      width: 1px;
+      height: 22px;
+      background: var(--border-color);
+      margin: 0 3px;
+    }
+
+    /* Canvas Viewport & Guide Box */
+    .canvas-wrapper {
+      position: relative;
+      background: var(--canvas-bg);
+      border: 2px solid var(--border-color);
+      border-radius: 12px;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+      overflow: hidden;
+      touch-action: none;
+      cursor: crosshair;
+    }
+
+    .canvas-wrapper:hover {
+      border-color: rgba(99, 102, 241, 0.5);
+    }
+
+    /* Faint centered guides (rendered in CSS, strictly outside the exported raster canvas) */
+    .guide-box {
+      position: absolute;
+      top: 14.3%;
+      left: 14.3%;
+      width: 71.4%;
+      height: 71.4%;
+      border: 1px dashed rgba(255, 255, 255, 0.14);
+      border-radius: 8px;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .crosshair-h {
+      position: absolute;
+      top: 50%;
+      left: 6%;
+      right: 6%;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.12) 20%, rgba(255, 255, 255, 0.12) 80%, transparent);
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .crosshair-v {
+      position: absolute;
+      left: 50%;
+      top: 6%;
+      bottom: 6%;
+      width: 1px;
+      background: linear-gradient(180deg, transparent, rgba(255, 255, 255, 0.12) 20%, rgba(255, 255, 255, 0.12) 80%, transparent);
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    canvas {
+      display: block;
+      position: relative;
+      z-index: 2;
+      background: transparent;
+      touch-action: none;
+    }
+
+    .footer-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      margin-top: 6px;
+      font-size: 11px;
+      color: var(--text-muted);
+      padding: 0 4px;
+    }
+
+    .status-text {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .btn-predict {
+      background: #10B981;
+      border: none;
+      color: #FFFFFF;
+      border-radius: 6px;
+      padding: 4px 10px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      display: none;
+    }
+    .btn-predict:hover {
+      background: #059669;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Controls Toolbar -->
+  <div class="toolbar" id="toolbar">
+    <!-- Mode: Draw or Erase -->
+    <div class="btn-group">
+      <button class="tool-btn active" id="btnPen" title="Draw Stroke">✏️ Pen</button>
+      <button class="tool-btn" id="btnEraser" title="Erase Stroke">🧹 Eraser</button>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Brush Presets -->
+    <div class="btn-group">
+      <button class="tool-btn" id="presetThin" title="Thin Brush (12px)">Thin</button>
+      <button class="tool-btn active" id="presetMed" title="Medium Brush (20px - matches dataset)">Medium</button>
+      <button class="tool-btn" id="presetBold" title="Bold Brush (28px)">Bold</button>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Stroke History Controls -->
+    <div class="btn-group">
+      <button class="tool-btn" id="btnUndo" title="Undo Last Stroke" disabled>↩️ Undo</button>
+      <button class="tool-btn" id="btnRedo" title="Redo Stroke" disabled>↪️ Redo</button>
+      <button class="tool-btn btn-danger" id="btnClear" title="Clear Canvas">🗑️ Clear</button>
+    </div>
+
+    <button class="btn-predict" id="btnManualPredict">⚡ Predict</button>
+  </div>
+
+  <!-- Drawing Area with Non-Rasterized CSS Guides -->
+  <div class="canvas-wrapper" id="canvasWrapper">
+    <div class="guide-box" title="Centered 20x20 Bounding Guide"></div>
+    <div class="crosshair-h"></div>
+    <div class="crosshair-v"></div>
+    <canvas id="drawingCanvas"></canvas>
+  </div>
+
+  <div class="footer-bar" id="footerBar">
+    <span class="status-text" id="statusInfo">✏️ Ready</span>
+    <span id="strokeCountText">0 strokes</span>
+  </div>
+
+  <script>
+    // ----------------------------------------------------
+    // Streamlit Component Messaging Protocol
+    // ----------------------------------------------------
+    function sendToStreamlit(data) {
+      window.parent.postMessage({
+        isStreamlitMessage: true,
+        type: "streamlit:setComponentValue",
+        value: data
+      }, "*");
+    }
+
+    function notifyFrameHeight(height) {
+      window.parent.postMessage({
+        isStreamlitMessage: true,
+        type: "streamlit:setFrameHeight",
+        height: height
+      }, "*");
+    }
+
+    function notifyReady() {
+      window.parent.postMessage({
+        isStreamlitMessage: true,
+        type: "streamlit:componentReady",
+        apiVersion: 1
+      }, "*");
+    }
+
+    // ----------------------------------------------------
+    // Canvas State & History
+    // ----------------------------------------------------
+    const canvas = document.getElementById("drawingCanvas");
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    const wrapper = document.getElementById("canvasWrapper");
+
+    // UI Elements
+    const btnPen = document.getElementById("btnPen");
+    const btnEraser = document.getElementById("btnEraser");
+    const presetThin = document.getElementById("presetThin");
+    const presetMed = document.getElementById("presetMed");
+    const presetBold = document.getElementById("presetBold");
+    const btnUndo = document.getElementById("btnUndo");
+    const btnRedo = document.getElementById("btnRedo");
+    const btnClear = document.getElementById("btnClear");
+    const btnManualPredict = document.getElementById("btnManualPredict");
+    const statusInfo = document.getElementById("statusInfo");
+    const strokeCountText = document.getElementById("strokeCountText");
+
+    let currentTool = "pen"; // "pen" or "eraser"
+    let strokeWidth = 20;     // Default 20px (matches empirical training data stroke width)
+    let canvasSize = 320;     // Responsive canvas square size
+    let autoPredict = true;
+    let debounceTimer = null;
+    let isDrawing = false;
+    let currentStroke = null;
+
+    // Stroke history for Undo/Redo & Kinematic Features
+    let strokes = [];    // Array of { tool, size, points: [{x, y, t}] }
+    let redoStack = [];  // Array of restored strokes
+
+    // Set canvas dimensions
+    function initCanvasDimensions(size) {
+      canvasSize = size || 320;
+      const dpr = window.devicePixelRatio || 1;
+      
+      wrapper.style.width = canvasSize + "px";
+      wrapper.style.height = canvasSize + "px";
+      
+      canvas.width = canvasSize * dpr;
+      canvas.height = canvasSize * dpr;
+      canvas.style.width = canvasSize + "px";
+      canvas.style.height = canvasSize + "px";
+      
+      ctx.scale(dpr, dpr);
+      redrawCanvas();
+      
+      const totalH = document.body.scrollHeight + 10;
+      notifyFrameHeight(totalH);
+    }
+
+    // ----------------------------------------------------
+    // Drawing & Rendering Engine
+    // ----------------------------------------------------
+    function redrawCanvas() {
+      // Background is clean pure black (#000000) for standard MNIST
+      ctx.fillStyle = "#000000";
+      ctx.fillRect(0, 0, canvasSize, canvasSize);
+
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+
+      for (const stroke of strokes) {
+        if (!stroke.points || stroke.points.length === 0) continue;
+
+        ctx.strokeStyle = stroke.tool === "eraser" ? "#000000" : "#FFFFFF";
+        ctx.lineWidth = stroke.size;
+
+        ctx.beginPath();
+        if (stroke.points.length === 1) {
+          const pt = stroke.points[0];
+          ctx.arc(pt.x, pt.y, stroke.size / 2, 0, Math.PI * 2);
+          ctx.fillStyle = stroke.tool === "eraser" ? "#000000" : "#FFFFFF";
+          ctx.fill();
+        } else {
+          ctx.moveTo(stroke.points[0].x, stroke.points[0].y);
+          for (let i = 1; i < stroke.points.length; i++) {
+            const p1 = stroke.points[i - 1];
+            const p2 = stroke.points[i];
+            const midX = (p1.x + p2.x) / 2;
+            const midY = (p1.y + p2.y) / 2;
+            ctx.quadraticCurveTo(p1.x, p1.y, midX, midY);
+          }
+          const last = stroke.points[stroke.points.length - 1];
+          ctx.lineTo(last.x, last.y);
+          ctx.stroke();
+        }
+      }
+
+      updateUIState();
+    }
+
+    function updateUIState() {
+      btnUndo.disabled = strokes.length === 0;
+      btnRedo.disabled = redoStack.length === 0;
+      strokeCountText.textContent = `${strokes.length} stroke${strokes.length === 1 ? '' : 's'}`;
+    }
+
+    // Export clean PNG (strictly black background and white strokes, NO guide lines)
+    function exportDrawing() {
+      const dataUrl = canvas.toDataURL("image/png");
+      const hasInk = strokes.some(s => s.tool === "pen" && s.points.length > 0);
+
+      // Serialize stroke coordinate arrays
+      const strokeCoordinates = strokes.map(s => ({
+        tool: s.tool,
+        width: s.size,
+        points: s.points.map(pt => ({ x: Math.round(pt.x), y: Math.round(pt.y), t: pt.t }))
+      }));
+
+      return {
+        dataUrl: hasInk ? dataUrl : null,
+        hasDrawing: hasInk,
+        strokeCount: strokes.length,
+        strokes: strokeCoordinates,
+        timestamp: Date.now()
+      };
+    }
+
+    function triggerPrediction(isManual = false) {
+      statusInfo.textContent = "⚡ Recognizing...";
+      const payload = exportDrawing();
+      payload.isManual = isManual;
+      sendToStreamlit(payload);
+      setTimeout(() => {
+        statusInfo.textContent = strokes.length > 0 ? "✅ Updated" : "✏️ Ready";
+      }, 300);
+    }
+
+    function queueAutoPrediction() {
+      if (!autoPredict) return;
+      clearTimeout(debounceTimer);
+      statusInfo.textContent = "⏳ Pen up...";
+      debounceTimer = setTimeout(() => {
+        triggerPrediction(false);
+      }, 400); // 400ms debounce
+    }
+
+    // ----------------------------------------------------
+    // Pointer Events (Mouse, Tablet Stylus, Touch)
+    // ----------------------------------------------------
+    function getPointerPos(e) {
+      const rect = canvas.getBoundingClientRect();
+      return {
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top,
+        t: Date.now()
+      };
+    }
+
+    canvas.addEventListener("pointerdown", (e) => {
+      e.preventDefault();
+      canvas.setPointerCapture(e.pointerId);
+      isDrawing = true;
+      clearTimeout(debounceTimer);
+
+      const pt = getPointerPos(e);
+      currentStroke = {
+        tool: currentTool,
+        size: currentTool === "eraser" ? strokeWidth * 1.5 : strokeWidth,
+        points: [pt]
+      };
+      strokes.push(currentStroke);
+      redoStack = []; // New action clears redo stack
+
+      // Draw immediate dot
+      ctx.fillStyle = currentStroke.tool === "eraser" ? "#000000" : "#FFFFFF";
+      ctx.beginPath();
+      ctx.arc(pt.x, pt.y, currentStroke.size / 2, 0, Math.PI * 2);
+      ctx.fill();
+
+      updateUIState();
+      statusInfo.textContent = "✏️ Drawing...";
+    });
+
+    canvas.addEventListener("pointermove", (e) => {
+      if (!isDrawing || !currentStroke) return;
+      e.preventDefault();
+      const pt = getPointerPos(e);
+      const pts = currentStroke.points;
+      const prev = pts[pts.length - 1];
+
+      // Distance filter to prevent redundant co-located points
+      const dx = pt.x - prev.x;
+      const dy = pt.y - prev.y;
+      if (dx * dx + dy * dy < 4) return;
+
+      pts.push(pt);
+
+      ctx.strokeStyle = currentStroke.tool === "eraser" ? "#000000" : "#FFFFFF";
+      ctx.lineWidth = currentStroke.size;
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+
+      ctx.beginPath();
+      ctx.moveTo(prev.x, prev.y);
+      ctx.lineTo(pt.x, pt.y);
+      ctx.stroke();
+    });
+
+    function finishStroke(e) {
+      if (!isDrawing) return;
+      e.preventDefault();
+      isDrawing = false;
+      currentStroke = null;
+      redrawCanvas(); // Smooth curves
+      queueAutoPrediction();
+    }
+
+    canvas.addEventListener("pointerup", finishStroke);
+    canvas.addEventListener("pointercancel", finishStroke);
+
+    // ----------------------------------------------------
+    // Toolbar Button Handlers
+    // ----------------------------------------------------
+    btnPen.addEventListener("click", () => {
+      currentTool = "pen";
+      btnPen.classList.add("active");
+      btnEraser.classList.remove("active");
+    });
+
+    btnEraser.addEventListener("click", () => {
+      currentTool = "eraser";
+      btnEraser.classList.add("active");
+      btnPen.classList.remove("active");
+    });
+
+    function setPreset(btn, width) {
+      strokeWidth = width;
+      presetThin.classList.remove("active");
+      presetMed.classList.remove("active");
+      presetBold.classList.remove("active");
+      btn.classList.add("active");
+    }
+
+    presetThin.addEventListener("click", () => setPreset(presetThin, 12));
+    presetMed.addEventListener("click", () => setPreset(presetMed, 20));
+    presetBold.addEventListener("click", () => setPreset(presetBold, 28));
+
+    btnUndo.addEventListener("click", () => {
+      if (strokes.length > 0) {
+        redoStack.push(strokes.pop());
+        redrawCanvas();
+        queueAutoPrediction();
+      }
+    });
+
+    btnRedo.addEventListener("click", () => {
+      if (redoStack.length > 0) {
+        strokes.push(redoStack.pop());
+        redrawCanvas();
+        queueAutoPrediction();
+      }
+    });
+
+    btnClear.addEventListener("click", () => {
+      if (strokes.length > 0) {
+        strokes = [];
+        redoStack = [];
+        redrawCanvas();
+        triggerPrediction(true);
+      }
+    });
+
+    btnManualPredict.addEventListener("click", () => {
+      triggerPrediction(true);
+    });
+
+    // ----------------------------------------------------
+    // Streamlit Inbound Props Handler
+    // ----------------------------------------------------
+    window.addEventListener("message", (event) => {
+      if (event.data && event.data.type === "streamlit:render") {
+        const args = event.data.args || {};
+        if (args.canvas_size && args.canvas_size !== canvasSize) {
+          initCanvasDimensions(args.canvas_size);
+        }
+        if (args.stroke_width && args.stroke_width !== strokeWidth) {
+          strokeWidth = args.stroke_width;
+          if (strokeWidth <= 14) setPreset(presetThin, strokeWidth);
+          else if (strokeWidth <= 24) setPreset(presetMed, strokeWidth);
+          else setPreset(presetBold, strokeWidth);
+        }
+        if (args.auto_predict !== undefined) {
+          autoPredict = Boolean(args.auto_predict);
+          btnManualPredict.style.display = autoPredict ? "none" : "inline-block";
+        }
+        const totalH = document.body.scrollHeight + 10;
+        notifyFrameHeight(totalH);
+      }
+    });
+
+    // Initialize
+    initCanvasDimensions(320);
+    notifyReady();
+  </script>
+</body>
+</html>

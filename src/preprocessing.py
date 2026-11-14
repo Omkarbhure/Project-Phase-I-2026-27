@@ -116,7 +116,61 @@ def detect_multiple_digits(image):
     return False, 1, "Single digit"
 
 
-def preprocess_image(image, invert_if_needed=True):
+def check_drawing_quality(image) -> list[str]:
+    """
+    Non-blocking heuristic checks for drawing usability:
+      - Too small (tight bounding box < 45px)
+      - Off-center (ink centroid > 32% away from canvas center)
+      - Too thin (scanned stroke width < 1.8px in 28x28 space)
+    Returns:
+      List of friendly advice strings (empty if drawing quality is optimal).
+    """
+    tips = []
+    if isinstance(image, np.ndarray):
+        if image.dtype != np.uint8 and np.max(image) <= 1.0:
+            image = (image * 255).astype(np.uint8)
+        else:
+            image = image.astype(np.uint8)
+        image = Image.fromarray(image)
+
+    # Convert to grayscale
+    if image.mode in ("RGBA", "LA") or (image.mode == "P" and "transparency" in image.info):
+        bg = Image.new("RGBA", image.size, (0, 0, 0, 255))
+        image = Image.alpha_composite(bg, image.convert("RGBA")).convert("RGB")
+    img_gray = image.convert("L")
+    arr = np.array(img_gray)
+    if np.mean(arr) > 130:
+        arr = 255 - arr
+
+    binary = arr > 35
+    if not np.any(binary):
+        return tips
+
+    y_idx, x_idx = np.where(binary)
+    h_span = int(np.max(y_idx) - np.min(y_idx))
+    w_span = int(np.max(x_idx) - np.min(x_idx))
+
+    # 1. Size check
+    if max(h_span, w_span) < 45:
+        tips.append("📐 **Tip - Small Drawing**: Your character is quite small. Drawing larger across the guide box improves recognition accuracy.")
+
+    # 2. Centering check
+    c_y = np.mean(y_idx)
+    c_x = np.mean(x_idx)
+    img_h, img_w = arr.shape
+    dist_from_center = np.sqrt(((c_x - img_w / 2) / img_w) ** 2 + ((c_y - img_h / 2) / img_h) ** 2)
+    if dist_from_center > 0.32:
+        tips.append("🎯 **Tip - Off-Center**: Drawing is near the edge. Centering inside the guide box helps centering alignment.")
+
+    # 3. Thin stroke check
+    dist = scipy.ndimage.distance_transform_edt(binary)
+    if np.any(binary) and np.mean(dist[binary]) * 2.0 < 1.8:
+        tips.append("✏️ **Tip - Thin Strokes**: Strokes appear faint or thin. Consider using Medium/Bold brush or enabling Auto-thicken.")
+
+    return tips
+
+
+def preprocess_image(image, invert_if_needed=True, auto_thicken=False):
     """
     Enhanced MNIST-standard Preprocessing Pipeline:
       1. Converts to Grayscale & composites alpha channel.
@@ -125,8 +179,9 @@ def preprocess_image(image, invert_if_needed=True):
       4. Bounding-box cropping to isolate the digit regardless of canvas position.
       5. Aspect-ratio preserving scaling into a 20x20 bounding box.
       6. Center-of-Mass (Centroid) alignment into the 28x28 spatial grid.
-      7. Gaussian ink-stroke antialiasing filter to match scanned pen stroke gradients.
-      8. Dynamic range normalization [0.0, 1.0] and flatten to (1, 784).
+      7. Optional Auto-thicken: dilates thin strokes to match training distribution.
+      8. Gaussian ink-stroke antialiasing filter to match scanned pen stroke gradients.
+      9. Dynamic range normalization [0.0, 1.0] and flatten to (1, 784).
     """
     if isinstance(image, np.ndarray):
         if image.dtype != np.uint8 and np.max(image) <= 1.0:
@@ -192,6 +247,16 @@ def preprocess_image(image, invert_if_needed=True):
         shift_y = 14.0 - cy
         shift_x = 14.0 - cx
         arr_28 = scipy.ndimage.shift(arr_28, (shift_y, shift_x), mode="constant", cval=0.0)
+
+    # Optional Auto-thicken: dilates thin strokes before smoothing
+    if auto_thicken and np.max(arr_28) > 30:
+        bin_mask = arr_28 > 45
+        dist = scipy.ndimage.distance_transform_edt(bin_mask)
+        avg_w = np.mean(dist[bin_mask]) * 2.0 if np.any(bin_mask) else 3.0
+        # If stroke is below 2.2px, apply subtle dilation
+        if avg_w < 2.2:
+            dilated = scipy.ndimage.binary_dilation(bin_mask, structure=np.ones((2, 2)))
+            arr_28 = np.maximum(arr_28, dilated.astype(np.float32) * 200.0)
 
     # Gaussian smoothing to simulate scanned pen ink gradients matching MNIST
     arr_28 = scipy.ndimage.gaussian_filter(arr_28, sigma=0.65)

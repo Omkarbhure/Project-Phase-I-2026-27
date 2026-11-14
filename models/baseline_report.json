@@ -1,0 +1,689 @@
+{
+  "metadata": {
+    "evaluated_at": "2026-11-12T14:59:34Z",
+    "dataset_file": "character_dataset.npz",
+    "total_samples": 33600,
+    "test_samples": 6720,
+    "num_classes": 48,
+    "random_state": 42,
+    "test_size": 0.2
+  },
+  "models": {
+    "lr": {
+      "name": "Logistic Regression",
+      "accuracy": 74.479,
+      "precision_weighted": 77.311,
+      "recall_weighted": 74.479,
+      "f1_weighted": 75.31,
+      "precision_macro": 77.311,
+      "recall_macro": 74.479,
+      "f1_macro": 75.31,
+      "latency_ms_per_sample": 0.0008,
+      "total_inference_time_sec": 0.005
+    },
+    "rf": {
+      "name": "Random Forest (120 Trees)",
+      "accuracy": 84.39,
+      "precision_weighted": 87.874,
+      "recall_weighted": 84.39,
+      "f1_weighted": 85.493,
+      "precision_macro": 87.874,
+      "recall_macro": 84.39,
+      "f1_macro": 85.493,
+      "latency_ms_per_sample": 0.0206,
+      "total_inference_time_sec": 0.138
+    },
+    "mlp": {
+      "name": "Deep Neural Net (MLP 384x192)",
+      "accuracy": 85.253,
+      "precision_weighted": 88.98,
+      "recall_weighted": 85.253,
+      "f1_weighted": 86.382,
+      "precision_macro": 88.98,
+      "recall_macro": 85.253,
+      "f1_macro": 86.382,
+      "latency_ms_per_sample": 0.0074,
+      "total_inference_time_sec": 0.05
+    },
+    "ensemble": {
+      "name": "Soft Voting Ensemble (1:3:5)",
+      "accuracy": 85.521,
+      "precision_weighted": 89.424,
+      "recall_weighted": 85.521,
+      "f1_weighted": 86.875,
+      "precision_macro": 89.424,
+      "recall_macro": 85.521,
+      "f1_macro": 86.875,
+      "latency_ms_per_sample": 0.0274,
+      "total_inference_time_sec": 0.184
+    }
+  },
+  "mcnemar_ensemble_vs_mlp": {
+    "model_a": "Ensemble",
+    "model_b": "MLP",
+    "contingency_table": {
+      "both_correct_n11": 5701,
+      "both_wrong_n00": 945,
+      "Ensemble_correct_MLP_wrong_n10": 46,
+      "Ensemble_wrong_MLP_correct_n01": 28
+    },
+    "total_discordant": 74,
+    "net_gain": 18,
+    "chi2_continuity_corrected": 3.9054,
+    "p_value_chi2": 0.0481,
+    "p_value_exact_binomial": 0.0474,
+    "statistically_significant_05": true
+  },
+  "category_summary": {
+    "Digits (0-9)": {
+      "sample_count": 1400,
+      "accuracy": 89.0,
+      "precision": 96.52,
+      "recall": 89.0,
+      "f1_score": 92.57
+    },
+    "Alphabets (A-Z / a-z)": {
+      "sample_count": 3640,
+      "accuracy": 79.97,
+      "precision": 89.48,
+      "recall": 79.97,
+      "f1_score": 83.61
+    },
+    "Special Symbols": {
+      "sample_count": 1680,
+      "accuracy": 94.64,
+      "precision": 99.88,
+      "recall": 94.64,
+      "f1_score": 96.83
+    }
+  },
+  "top_confused_pairs": [
+    {
+      "true_idx": 39,
+      "pred_idx": 1,
+      "true_label": "/",
+      "predicted_label": "1",
+      "count": 45
+    },
+    {
+      "true_idx": 18,
+      "pred_idx": 21,
+      "true_label": "I / i",
+      "predicted_label": "L / l",
+      "count": 44
+    },
+    {
+      "true_idx": 37,
+      "pred_idx": 18,
+      "true_label": "-",
+      "predicted_label": "I / i",
+      "count": 35
+    },
+    {
+      "true_idx": 35,
+      "pred_idx": 21,
+      "true_label": "Z / z",
+      "predicted_label": "L / l",
+      "count": 24
+    },
+    {
+      "true_idx": 15,
+      "pred_idx": 21,
+      "true_label": "F / f",
+      "predicted_label": "L / l",
+      "count": 22
+    },
+    {
+      "true_idx": 29,
+      "pred_idx": 21,
+      "true_label": "T / t",
+      "predicted_label": "L / l",
+      "count": 21
+    },
+    {
+      "true_idx": 14,
+      "pred_idx": 21,
+      "true_label": "E / e",
+      "predicted_label": "L / l",
+      "count": 21
+    },
+    {
+      "true_idx": 11,
+      "pred_idx": 21,
+      "true_label": "B / b",
+      "predicted_label": "L / l",
+      "count": 20
+    },
+    {
+      "true_idx": 20,
+      "pred_idx": 21,
+      "true_label": "K / k",
+      "predicted_label": "L / l",
+      "count": 20
+    },
+    {
+      "true_idx": 34,
+      "pred_idx": 21,
+      "true_label": "Y / y",
+      "predicted_label": "L / l",
+      "count": 19
+    },
+    {
+      "true_idx": 33,
+      "pred_idx": 21,
+      "true_label": "X / x",
+      "predicted_label": "L / l",
+      "count": 18
+    },
+    {
+      "true_idx": 26,
+      "pred_idx": 21,
+      "true_label": "Q / q",
+      "predicted_label": "L / l",
+      "count": 18
+    },
+    {
+      "true_idx": 12,
+      "pred_idx": 21,
+      "true_label": "C / c",
+      "predicted_label": "L / l",
+      "count": 18
+    },
+    {
+      "true_idx": 32,
+      "pred_idx": 21,
+      "true_label": "W / w",
+      "predicted_label": "L / l",
+      "count": 17
+    },
+    {
+      "true_idx": 23,
+      "pred_idx": 21,
+      "true_label": "N / n",
+      "predicted_label": "L / l",
+      "count": 16
+    }
+  ],
+  "per_class_metrics": {
+    "0": {
+      "class_id": 0,
+      "label": "0",
+      "canonical": "0",
+      "category": "Digit",
+      "precision": 88.19,
+      "recall": 90.71,
+      "f1_score": 89.44,
+      "support": 140
+    },
+    "1": {
+      "class_id": 1,
+      "label": "1",
+      "canonical": "1",
+      "category": "Digit",
+      "precision": 65.08,
+      "recall": 87.86,
+      "f1_score": 74.77,
+      "support": 140
+    },
+    "2": {
+      "class_id": 2,
+      "label": "2",
+      "canonical": "2",
+      "category": "Digit",
+      "precision": 92.19,
+      "recall": 84.29,
+      "f1_score": 88.06,
+      "support": 140
+    },
+    "3": {
+      "class_id": 3,
+      "label": "3",
+      "canonical": "3",
+      "category": "Digit",
+      "precision": 81.94,
+      "recall": 84.29,
+      "f1_score": 83.1,
+      "support": 140
+    },
+    "4": {
+      "class_id": 4,
+      "label": "4",
+      "canonical": "4",
+      "category": "Digit",
+      "precision": 94.03,
+      "recall": 90.0,
+      "f1_score": 91.97,
+      "support": 140
+    },
+    "5": {
+      "class_id": 5,
+      "label": "5",
+      "canonical": "5",
+      "category": "Digit",
+      "precision": 94.78,
+      "recall": 90.71,
+      "f1_score": 92.7,
+      "support": 140
+    },
+    "6": {
+      "class_id": 6,
+      "label": "6",
+      "canonical": "6",
+      "category": "Digit",
+      "precision": 93.62,
+      "recall": 94.29,
+      "f1_score": 93.95,
+      "support": 140
+    },
+    "7": {
+      "class_id": 7,
+      "label": "7",
+      "canonical": "7",
+      "category": "Digit",
+      "precision": 92.47,
+      "recall": 96.43,
+      "f1_score": 94.41,
+      "support": 140
+    },
+    "8": {
+      "class_id": 8,
+      "label": "8",
+      "canonical": "8",
+      "category": "Digit",
+      "precision": 92.97,
+      "recall": 85.0,
+      "f1_score": 88.81,
+      "support": 140
+    },
+    "9": {
+      "class_id": 9,
+      "label": "9",
+      "canonical": "9",
+      "category": "Digit",
+      "precision": 87.68,
+      "recall": 86.43,
+      "f1_score": 87.05,
+      "support": 140
+    },
+    "10": {
+      "class_id": 10,
+      "label": "A / a",
+      "canonical": "A",
+      "category": "Alphabet",
+      "precision": 89.93,
+      "recall": 89.29,
+      "f1_score": 89.61,
+      "support": 140
+    },
+    "11": {
+      "class_id": 11,
+      "label": "B / b",
+      "canonical": "B",
+      "category": "Alphabet",
+      "precision": 98.0,
+      "recall": 70.0,
+      "f1_score": 81.67,
+      "support": 140
+    },
+    "12": {
+      "class_id": 12,
+      "label": "C / c",
+      "canonical": "C",
+      "category": "Alphabet",
+      "precision": 87.41,
+      "recall": 84.29,
+      "f1_score": 85.82,
+      "support": 140
+    },
+    "13": {
+      "class_id": 13,
+      "label": "D / d",
+      "canonical": "D",
+      "category": "Alphabet",
+      "precision": 90.28,
+      "recall": 92.86,
+      "f1_score": 91.55,
+      "support": 140
+    },
+    "14": {
+      "class_id": 14,
+      "label": "E / e",
+      "canonical": "E",
+      "category": "Alphabet",
+      "precision": 89.47,
+      "recall": 72.86,
+      "f1_score": 80.31,
+      "support": 140
+    },
+    "15": {
+      "class_id": 15,
+      "label": "F / f",
+      "canonical": "F",
+      "category": "Alphabet",
+      "precision": 88.52,
+      "recall": 77.14,
+      "f1_score": 82.44,
+      "support": 140
+    },
+    "16": {
+      "class_id": 16,
+      "label": "G / g",
+      "canonical": "G",
+      "category": "Alphabet",
+      "precision": 69.33,
+      "recall": 80.71,
+      "f1_score": 74.59,
+      "support": 140
+    },
+    "17": {
+      "class_id": 17,
+      "label": "H / h",
+      "canonical": "H",
+      "category": "Alphabet",
+      "precision": 92.91,
+      "recall": 84.29,
+      "f1_score": 88.39,
+      "support": 140
+    },
+    "18": {
+      "class_id": 18,
+      "label": "I / i",
+      "canonical": "I",
+      "category": "Alphabet",
+      "precision": 61.31,
+      "recall": 60.0,
+      "f1_score": 60.65,
+      "support": 140
+    },
+    "19": {
+      "class_id": 19,
+      "label": "J / j",
+      "canonical": "J",
+      "category": "Alphabet",
+      "precision": 94.02,
+      "recall": 78.57,
+      "f1_score": 85.6,
+      "support": 140
+    },
+    "20": {
+      "class_id": 20,
+      "label": "K / k",
+      "canonical": "K",
+      "category": "Alphabet",
+      "precision": 91.8,
+      "recall": 80.0,
+      "f1_score": 85.5,
+      "support": 140
+    },
+    "21": {
+      "class_id": 21,
+      "label": "L / l",
+      "canonical": "L",
+      "category": "Alphabet",
+      "precision": 20.25,
+      "recall": 70.0,
+      "f1_score": 31.41,
+      "support": 140
+    },
+    "22": {
+      "class_id": 22,
+      "label": "M / m",
+      "canonical": "M",
+      "category": "Alphabet",
+      "precision": 94.81,
+      "recall": 91.43,
+      "f1_score": 93.09,
+      "support": 140
+    },
+    "23": {
+      "class_id": 23,
+      "label": "N / n",
+      "canonical": "N",
+      "category": "Alphabet",
+      "precision": 90.24,
+      "recall": 79.29,
+      "f1_score": 84.41,
+      "support": 140
+    },
+    "24": {
+      "class_id": 24,
+      "label": "O / o",
+      "canonical": "O",
+      "category": "Alphabet",
+      "precision": 90.83,
+      "recall": 77.86,
+      "f1_score": 83.85,
+      "support": 140
+    },
+    "25": {
+      "class_id": 25,
+      "label": "P / p",
+      "canonical": "P",
+      "category": "Alphabet",
+      "precision": 91.87,
+      "recall": 80.71,
+      "f1_score": 85.93,
+      "support": 140
+    },
+    "26": {
+      "class_id": 26,
+      "label": "Q / q",
+      "canonical": "Q",
+      "category": "Alphabet",
+      "precision": 82.41,
+      "recall": 63.57,
+      "f1_score": 71.77,
+      "support": 140
+    },
+    "27": {
+      "class_id": 27,
+      "label": "R / r",
+      "canonical": "R",
+      "category": "Alphabet",
+      "precision": 86.67,
+      "recall": 83.57,
+      "f1_score": 85.09,
+      "support": 140
+    },
+    "28": {
+      "class_id": 28,
+      "label": "S / s",
+      "canonical": "S",
+      "category": "Alphabet",
+      "precision": 96.85,
+      "recall": 87.86,
+      "f1_score": 92.13,
+      "support": 140
+    },
+    "29": {
+      "class_id": 29,
+      "label": "T / t",
+      "canonical": "T",
+      "category": "Alphabet",
+      "precision": 90.98,
+      "recall": 79.29,
+      "f1_score": 84.73,
+      "support": 140
+    },
+    "30": {
+      "class_id": 30,
+      "label": "U / u",
+      "canonical": "U",
+      "category": "Alphabet",
+      "precision": 89.86,
+      "recall": 95.0,
+      "f1_score": 92.36,
+      "support": 140
+    },
+    "31": {
+      "class_id": 31,
+      "label": "V / v",
+      "canonical": "V",
+      "category": "Alphabet",
+      "precision": 93.44,
+      "recall": 81.43,
+      "f1_score": 87.02,
+      "support": 140
+    },
+    "32": {
+      "class_id": 32,
+      "label": "W / w",
+      "canonical": "W",
+      "category": "Alphabet",
+      "precision": 88.33,
+      "recall": 75.71,
+      "f1_score": 81.54,
+      "support": 140
+    },
+    "33": {
+      "class_id": 33,
+      "label": "X / x",
+      "canonical": "X",
+      "category": "Alphabet",
+      "precision": 95.16,
+      "recall": 84.29,
+      "f1_score": 89.39,
+      "support": 140
+    },
+    "34": {
+      "class_id": 34,
+      "label": "Y / y",
+      "canonical": "Y",
+      "category": "Alphabet",
+      "precision": 81.75,
+      "recall": 80.0,
+      "f1_score": 80.87,
+      "support": 140
+    },
+    "35": {
+      "class_id": 35,
+      "label": "Z / z",
+      "canonical": "Z",
+      "category": "Alphabet",
+      "precision": 93.28,
+      "recall": 79.29,
+      "f1_score": 85.71,
+      "support": 140
+    },
+    "36": {
+      "class_id": 36,
+      "label": "+",
+      "canonical": "+",
+      "category": "Symbol",
+      "precision": 98.59,
+      "recall": 100.0,
+      "f1_score": 99.29,
+      "support": 140
+    },
+    "37": {
+      "class_id": 37,
+      "label": "-",
+      "canonical": "-",
+      "category": "Symbol",
+      "precision": 97.22,
+      "recall": 75.0,
+      "f1_score": 84.68,
+      "support": 140
+    },
+    "38": {
+      "class_id": 38,
+      "label": "*",
+      "canonical": "*",
+      "category": "Symbol",
+      "precision": 100.0,
+      "recall": 98.57,
+      "f1_score": 99.28,
+      "support": 140
+    },
+    "39": {
+      "class_id": 39,
+      "label": "/",
+      "canonical": "/",
+      "category": "Alphabet",
+      "precision": 83.04,
+      "recall": 66.43,
+      "f1_score": 73.81,
+      "support": 140
+    },
+    "40": {
+      "class_id": 40,
+      "label": "=",
+      "canonical": "=",
+      "category": "Symbol",
+      "precision": 97.9,
+      "recall": 100.0,
+      "f1_score": 98.94,
+      "support": 140
+    },
+    "41": {
+      "class_id": 41,
+      "label": "?",
+      "canonical": "?",
+      "category": "Symbol",
+      "precision": 100.0,
+      "recall": 100.0,
+      "f1_score": 100.0,
+      "support": 140
+    },
+    "42": {
+      "class_id": 42,
+      "label": "!",
+      "canonical": "!",
+      "category": "Symbol",
+      "precision": 97.2,
+      "recall": 99.29,
+      "f1_score": 98.23,
+      "support": 140
+    },
+    "43": {
+      "class_id": 43,
+      "label": "#",
+      "canonical": "#",
+      "category": "Symbol",
+      "precision": 99.29,
+      "recall": 100.0,
+      "f1_score": 99.64,
+      "support": 140
+    },
+    "44": {
+      "class_id": 44,
+      "label": "@",
+      "canonical": "@",
+      "category": "Symbol",
+      "precision": 98.57,
+      "recall": 98.57,
+      "f1_score": 98.57,
+      "support": 140
+    },
+    "45": {
+      "class_id": 45,
+      "label": "$",
+      "canonical": "$",
+      "category": "Symbol",
+      "precision": 99.29,
+      "recall": 100.0,
+      "f1_score": 99.64,
+      "support": 140
+    },
+    "46": {
+      "class_id": 46,
+      "label": "%",
+      "canonical": "%",
+      "category": "Symbol",
+      "precision": 98.56,
+      "recall": 97.86,
+      "f1_score": 98.21,
+      "support": 140
+    },
+    "47": {
+      "class_id": 47,
+      "label": "&",
+      "canonical": "&",
+      "category": "Symbol",
+      "precision": 100.0,
+      "recall": 100.0,
+      "f1_score": 100.0,
+      "support": 140
+    }
+  }
+}

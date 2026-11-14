@@ -10,6 +10,9 @@ __pycache__/
 *$py.class
 *.pyc
 
+# Streamlit Credentials
+.streamlit/credentials.toml
+
 # ML Model Artifacts & Datasets (Build via 'python src/dataset_builder.py' and train via 'python src/train.py')
 models/*.pkl
 models/*.joblib

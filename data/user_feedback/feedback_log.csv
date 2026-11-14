@@ -1,0 +1,2 @@
+timestamp,sample_id,class_id,true_label,predicted_label,was_correct,original_img_path,preprocessed_img_path,stroke_count
+2026-11-12 20:13:48,20261112_201348_571,3,3,3,1,data/user_feedback/digit_3/20261112_201348_571_orig.png,data/user_feedback/digit_3/20261112_201348_571_28x28.png,1

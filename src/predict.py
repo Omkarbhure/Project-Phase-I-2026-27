@@ -101,7 +101,7 @@ def load_model():
     return _cached_model
 
 
-def predict_digit(image, weights=None, voting_mode="soft"):
+def predict_digit(image, weights=None, voting_mode="soft", auto_thicken=False):
     """
     Unified prediction interface for digits, alphabets (both capital and small), and 12 special characters.
     Supports dynamic weights and soft vs. hard voting mode for ensemble exploration.
@@ -110,6 +110,7 @@ def predict_digit(image, weights=None, voting_mode="soft"):
         image: PIL Image or ndarray
         weights (dict, optional): e.g. {'lr': 1, 'rf': 3, 'mlp': 5}. Defaults to 1:3:5.
         voting_mode (str): "soft" (probability weighted sum) or "hard" (majority voting).
+        auto_thicken (bool): Whether to dilate thin strokes during preprocessing.
 
     Returns:
         prediction_label (str): e.g. '7', 'A / a', '#', '@'
@@ -120,7 +121,7 @@ def predict_digit(image, weights=None, voting_mode="soft"):
         category (str): character category description
     """
     model = load_model()
-    processed_image = preprocess_image(image)
+    processed_image = preprocess_image(image, auto_thicken=auto_thicken)
 
     # Base estimator probabilities
     individual_preds = {}
