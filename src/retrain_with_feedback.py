@@ -17,11 +17,25 @@ from sklearn.neural_network import MLPClassifier
 from sklearn.metrics import accuracy_score
 
 from dataset_builder import DATASET_PATH
-from predict import load_model, CHARACTER_MODEL_PATH
-from feedback_manager import FEEDBACK_LOG_CSV, BASE_DIR
+from predict import load_model, CHARACTER_MODEL_PATH, BASE_DIR
+from feedback_manager import FEEDBACK_LOG_CSV
+
+MODELS_DIR = os.path.join(BASE_DIR, "models")
+CANDIDATE_MODEL_PATH = os.path.join(MODELS_DIR, "candidate_ensemble.pkl")
 
 
 def retrain_ensemble_with_feedback(feedback_weight: float = 4.0, random_state: int = 42):
+    """
+    Retrains the voting ensemble incorporating labeled user feedback samples.
+    
+    Safety & Validation Rules:
+      1. Applies sample weight (default 4.0x) to user feedback instances.
+      2. Saves candidate model separately to models/candidate_ensemble.pkl.
+      3. Evaluates candidate model vs currently deployed production model on validation set.
+      4. Promotes candidate to models/character_ensemble.pkl ONLY if validation accuracy
+         does NOT drop (val_acc >= baseline_acc).
+      5. Rolls back (retains previous production model) if performance degrades.
+    """
     print("=" * 70)
     print("      RETRAINING ENSEMBLE MODEL WITH USER FEEDBACK SAMPLES")
     print("=" * 70)
@@ -56,7 +70,7 @@ def retrain_ensemble_with_feedback(feedback_weight: float = 4.0, random_state: i
                             X_feed.append(arr.flatten())
                             y_feed.append(int(row["class_id"]))
                             feed_count += 1
-                    except Exception as e:
+                    except Exception:
                         pass
 
     print(f"[2/4] Discovered {feed_count} validated user feedback drawings.")
@@ -82,8 +96,8 @@ def retrain_ensemble_with_feedback(feedback_weight: float = 4.0, random_state: i
         X_merged, y_merged, weights_merged, test_size=0.2, random_state=random_state, stratify=y_merged
     )
 
-    # 4. Fit Calibrated Voting Ensemble
-    print("\n[4/4] Fitting base models and calibrated voting ensemble...")
+    # 4. Fit Candidate Voting Ensemble
+    print("\n[4/4] Fitting base models and calibrated candidate voting ensemble...")
     lr = LogisticRegression(max_iter=250, solver="lbfgs", random_state=random_state)
     rf = RandomForestClassifier(n_estimators=120, max_depth=30, random_state=random_state, n_jobs=-1)
     mlp = MLPClassifier(
@@ -96,7 +110,7 @@ def retrain_ensemble_with_feedback(feedback_weight: float = 4.0, random_state: i
         random_state=random_state,
     )
 
-    ensemble = VotingClassifier(
+    candidate_ensemble = VotingClassifier(
         estimators=[("lr", lr), ("rf", rf), ("mlp", mlp)],
         voting="soft",
         weights=[1, 3, 5],
@@ -104,21 +118,45 @@ def retrain_ensemble_with_feedback(feedback_weight: float = 4.0, random_state: i
     )
     print("  * Fitting Weighted Soft Voting Ensemble...")
     sys.stdout.flush()
-    ensemble.fit(X_train, y_train, sample_weight=w_train)
+    candidate_ensemble.fit(X_train, y_train, sample_weight=w_train)
 
-    # Evaluate
-    val_pred = ensemble.predict(X_val)
-    val_acc = accuracy_score(y_val, val_pred) * 100.0
-    print(f"\n  ⭐ Validation Accuracy after retraining: {val_acc:.2f}%")
+    # Evaluate Candidate
+    val_pred = candidate_ensemble.predict(X_val)
+    val_acc = float(accuracy_score(y_val, val_pred) * 100.0)
+    print(f"\n  ⭐ Candidate Model Validation Accuracy: {val_acc:.2f}%")
 
-    # Save to model artifact path
-    joblib.dump(ensemble, CHARACTER_MODEL_PATH, compress=3)
-    print(f"  * Updated model artifact saved to: {os.path.basename(CHARACTER_MODEL_PATH)}")
+    # Save Candidate separately
+    os.makedirs(MODELS_DIR, exist_ok=True)
+    joblib.dump(candidate_ensemble, CANDIDATE_MODEL_PATH, compress=3)
+    print(f"  * Candidate artifact saved to: {os.path.basename(CANDIDATE_MODEL_PATH)}")
+
+    # Check against baseline production model if present
+    is_promoted = True
+    if os.path.exists(CHARACTER_MODEL_PATH):
+        try:
+            current_model = joblib.load(CHARACTER_MODEL_PATH)
+            baseline_val_pred = current_model.predict(X_val)
+            baseline_val_acc = float(accuracy_score(y_val, baseline_val_pred) * 100.0)
+            print(f"  * Deployed Model Baseline Accuracy on Validation Split: {baseline_val_acc:.2f}%")
+
+            # Promote only if no accuracy drop
+            if val_acc < baseline_val_acc:
+                is_promoted = False
+                print(f"  ⚠️ ACCURACY DROP DETECTED ({val_acc:.2f}% < {baseline_val_acc:.2f}%).")
+                print("  -> ROLLBACK TRIGGERED: Deployed production model retained; candidate discarded.")
+            else:
+                print(f"  ✅ ACCURACY VERIFIED ({val_acc:.2f}% >= {baseline_val_acc:.2f}%). Promoting candidate.")
+        except Exception as e:
+            print(f"  * Note during baseline comparison: {e}")
+
+    if is_promoted:
+        joblib.dump(candidate_ensemble, CHARACTER_MODEL_PATH, compress=3)
+        print(f"  * Production model artifact promoted to: {os.path.basename(CHARACTER_MODEL_PATH)}")
 
     print("\n" + "=" * 70)
     print("           FEEDBACK RETRAINING COMPLETE")
     print("=" * 70)
-    return val_acc, feed_count
+    return val_acc, feed_count, is_promoted
 
 
 if __name__ == "__main__":

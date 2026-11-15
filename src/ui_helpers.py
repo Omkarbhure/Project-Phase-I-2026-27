@@ -1,4 +1,5 @@
 import os
+import html
 import streamlit as st
 
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -35,12 +36,17 @@ def render_template(template_name: str, **kwargs):
     """Render an HTML template with variable replacements into Streamlit safely."""
     template = load_template(template_name)
     if template:
-        safe_kwargs = {
+        raw_kwargs = {
             "category": kwargs.get("category_upper", kwargs.get("category", "")),
             "category_upper": kwargs.get("category_upper", kwargs.get("category", "").upper()),
             "category_lower": kwargs.get("category_lower", kwargs.get("category", "").lower()),
             "category_detail": kwargs.get("category_detail", ""),
             **kwargs,
+        }
+        # Escape string values to prevent XSS injection
+        safe_kwargs = {
+            k: (html.escape(v) if isinstance(v, str) else v)
+            for k, v in raw_kwargs.items()
         }
         try:
             rendered = template.format(**safe_kwargs)
