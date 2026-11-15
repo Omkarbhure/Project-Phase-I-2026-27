@@ -202,3 +202,4 @@ def test_FB_10_held_out_canvas_test_set_isolation():
 
     # 6,720 held-out test split must be preserved
     assert len(X_test) == 6720
+

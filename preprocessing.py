@@ -1,6 +1,5 @@
 """
 Root-level alias forwarding to src.preprocessing.
 """
-from src.preprocessing import preprocess_training_data, preprocess_image
+from src.preprocessing import *
 
-__all__ = ["preprocess_training_data", "preprocess_image"]
