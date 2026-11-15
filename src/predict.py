@@ -64,10 +64,10 @@ def get_character_category(char_str: str) -> str:
     """Return concise category for a predicted character: Alphabet, Digit, or Symbol."""
     if char_str.isdigit():
         return "Digit"
-    elif "/" in char_str or char_str.isalpha():
-        return "Alphabet"
     elif char_str in SPECIAL_SYMBOLS_SET:
         return "Symbol"
+    elif "/" in char_str or char_str.isalpha():
+        return "Alphabet"
     return "Character"
 
 
@@ -75,10 +75,10 @@ def get_character_category_detail(char_str: str) -> str:
     """Return descriptive badge with icon."""
     if char_str.isdigit():
         return "🔢 Digit (0–9)"
-    elif "/" in char_str or char_str.isalpha():
-        return "🔤 Alphabet (A–Z / a–z)"
     elif char_str in SPECIAL_SYMBOLS_SET:
         return "➕ Math & Special Symbol"
+    elif "/" in char_str or char_str.isalpha():
+        return "🔤 Alphabet (A–Z / a–z)"
     return "Character"
 
 
