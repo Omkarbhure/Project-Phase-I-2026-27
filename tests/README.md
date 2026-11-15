@@ -104,3 +104,4 @@ tests/
 | **V-09** | Live Sandbox Weights Range (0..10, total > 0 fallback) | `src/predict.py::predict_digit` | `test_V09_weights_range_and_zero_fallback`, `test_PR_06_all_weights_zero_graceful_fallback`, `test_UI_06_all_zero_weights_fallback_graceful` |
 | **V-10** | Feedback Label Integrity (must be one of 48 valid classes) | `src/feedback_manager.py::get_class_id_from_label` | `test_V10_feedback_label_validation`, `test_FB_04_label_outside_48_classes_rejected` |
 | **V-11** | Consensus Guard (heuristics invoked only on disagreement / margin < 12%) | `src/disambiguation.py::disambiguate_homoglyphs` | `test_DS_03_consensus_guard_heuristics_not_invoked` |
+

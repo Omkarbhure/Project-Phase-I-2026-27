@@ -249,8 +249,9 @@ def preprocess_image(image, invert_if_needed=True, auto_thicken=False):
         arr_28 = scipy.ndimage.shift(arr_28, (shift_y, shift_x), mode="constant", cval=0.0)
 
     # Optional Auto-thicken: dilates thin strokes before smoothing
-    if auto_thicken and np.max(arr_28) > 30:
-        bin_mask = arr_28 > 45
+    if auto_thicken and np.max(arr_28) > 25:
+        th = max(20.0, 0.30 * float(np.max(arr_28)))
+        bin_mask = arr_28 > th
         dist = scipy.ndimage.distance_transform_edt(bin_mask)
         avg_w = np.mean(dist[bin_mask]) * 2.0 if np.any(bin_mask) else 3.0
         # If stroke is below 2.2px, apply subtle dilation

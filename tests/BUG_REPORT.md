@@ -87,3 +87,4 @@ During the audit, **7 distinct bugs and architectural anomalies** were identifie
 - **Root Cause**: Gate 2 requires `fill_ratio > 0.82 AND ink_count > 4000` to reject solid blocks. Synthetic dense noise images (e.g. 15%–30% fill spread across the full canvas) merge into a single large connected component under $5\times 5$ morphological dilation. Consequently, they pass Gate 2 (`fill < 0.82`) and Gate 3 (`components == 1`), reaching the classifier where they must be rejected by Gate 4 (OOD confidence floor < 16%).
 - **Automated Test**: `tests/test_validation.py::test_VA_08_photo_like_noisy_image_rejected`
 - **Recommended Fix**: Add a bounding-box dispersion check in Gate 2 (`total_ink_pixels > 2500 AND bbox_area > 0.7 * canvas_area`).
+

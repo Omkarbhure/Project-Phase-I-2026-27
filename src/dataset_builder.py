@@ -165,6 +165,17 @@ def generate_handwritten_variant(char, canvas_size=(100, 100)):
         draw.line([(xm, cy + random.randint(0, 10)), (x1, top_y)], fill=255, width=stroke)
         draw.line([(x1, top_y), (x1, bot_y)], fill=255, width=stroke)
 
+    else:
+        # Fallback to font glyph so unhandled characters NEVER produce blank images
+        font_names = ["arial.ttf", "calibri.ttf", "comic.ttf", "times.ttf", "segoeui.ttf", "tahoma.ttf", "verdana.ttf"]
+        found_font = None
+        for fn in font_names:
+            fp = os.path.join("C:\\Windows\\Fonts", fn)
+            if os.path.exists(fp):
+                found_font = fp
+                break
+        return generate_font_glyph(char, font_path=found_font, size=random.randint(50, 68), canvas_size=canvas_size)
+
     img = img.filter(ImageFilter.GaussianBlur(radius=0.5))
     return img
 

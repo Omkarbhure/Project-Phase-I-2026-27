@@ -603,8 +603,11 @@ if model_ready:
             st.caption("Incorporates all user feedback samples with sample weight = 4.0x into the ensemble.")
             if st.button("🔄 Retrain Ensemble with User Feedback", key="btn_run_feedback_retrain", use_container_width=True):
                 with st.spinner("Retraining ensemble across base dataset + user feedback..."):
-                    val_acc, n_samples = retrain_ensemble_with_feedback()
-                    st.success(f"Retraining complete! {n_samples} user feedback samples integrated. Validation Accuracy: {val_acc:.2f}%")
+                    val_acc, n_samples, is_promoted = retrain_ensemble_with_feedback()
+                    if is_promoted:
+                        st.success(f"Retraining complete and candidate promoted! {n_samples} user feedback samples integrated. Validation Accuracy: {val_acc:.2f}%")
+                    else:
+                        st.warning(f"Retraining completed ({n_samples} feedback samples, {val_acc:.2f}% accuracy), but did not exceed production baseline. Existing production model retained.")
                     st.rerun()
 
         if stats["recent"]:

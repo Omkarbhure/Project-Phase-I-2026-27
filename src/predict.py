@@ -1,6 +1,5 @@
 import os
 import sys
-import importlib
 import joblib
 import numpy as np
 
@@ -9,8 +8,6 @@ CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 if CURRENT_DIR not in sys.path:
     sys.path.insert(0, CURRENT_DIR)
 
-import disambiguation
-importlib.reload(disambiguation)
 from disambiguation import disambiguate_homoglyphs, is_five_pointed_star
 from preprocessing import preprocess_image
 
