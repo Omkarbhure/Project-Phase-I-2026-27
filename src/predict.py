@@ -85,6 +85,8 @@ _cached_model = None
 def load_model():
     """
     Load the trained voting ensemble model with caching.
+    Ensures n_jobs=1 on tree estimators to prevent parallel thread contention
+    and eliminate multiprocessing overhead during single-sample real-time inference.
     """
     global _cached_model
     if _cached_model is None:
@@ -95,6 +97,10 @@ def load_model():
                 f"Please run 'python src/train.py' first to train the ensemble model."
             )
         _cached_model = joblib.load(target_path)
+        if hasattr(_cached_model, "named_estimators_"):
+            rf = _cached_model.named_estimators_.get("rf")
+            if rf is not None and getattr(rf, "n_jobs", None) != 1:
+                rf.n_jobs = 1
     return _cached_model
 
 
