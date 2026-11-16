@@ -210,7 +210,7 @@ if model_ready:
             sample_digits = [str(i) for i in range(10)]
             for i, d in enumerate(sample_digits):
                 with d_cols[i]:
-                    if st.button(f"**{d}**", key=f"sample_digit_{d}", use_container_width=True):
+                    if st.button(f"**{d}**", key=f"sample_digit_{d}", width="stretch"):
                         img = Image.new("L", (140, 140), 0)
                         draw = ImageDraw.Draw(img)
                         try:
@@ -228,7 +228,7 @@ if model_ready:
             u_cols = st.columns(len(sample_upper))
             for i, l in enumerate(sample_upper):
                 with u_cols[i]:
-                    if st.button(f"**{l}**", key=f"sample_upper_{l}", use_container_width=True):
+                    if st.button(f"**{l}**", key=f"sample_upper_{l}", width="stretch"):
                         img = Image.new("L", (140, 140), 0)
                         draw = ImageDraw.Draw(img)
                         try:
@@ -246,7 +246,7 @@ if model_ready:
             low_cols = st.columns(len(sample_lower))
             for i, l in enumerate(sample_lower):
                 with low_cols[i]:
-                    if st.button(f"**{l}**", key=f"sample_lower_{l}", use_container_width=True):
+                    if st.button(f"**{l}**", key=f"sample_lower_{l}", width="stretch"):
                         img = Image.new("L", (140, 140), 0)
                         draw = ImageDraw.Draw(img)
                         try:
@@ -265,7 +265,7 @@ if model_ready:
             for i, s in enumerate(sample_symbols):
                 with s_cols[i]:
                     btn_label = f"**\\***" if s == "*" else f"**{s}**"
-                    if st.button(btn_label, key=f"sample_symbol_{i}", use_container_width=True):
+                    if st.button(btn_label, key=f"sample_symbol_{i}", width="stretch"):
                         img = Image.new("L", (140, 140), 0)
                         draw = ImageDraw.Draw(img)
                         try:
@@ -400,7 +400,7 @@ if model_ready:
 
                     f_col1, f_col2 = st.columns([1, 2], gap="large")
                     with f_col1:
-                        if st.button("✅ Prediction is Correct", key="btn_feedback_correct", use_container_width=True):
+                        if st.button("✅ Prediction is Correct", key="btn_feedback_correct", width="stretch"):
                             save_user_feedback(
                                 original_image=selected_image,
                                 preprocessed_28x28_arr=preprocessed,
@@ -560,7 +560,7 @@ if model_ready:
         if confused_pairs:
             df_conf = pd.DataFrame(confused_pairs)
             df_conf.columns = ["True Character", "Mispredicted Character", "Error Count"]
-            st.dataframe(df_conf, use_container_width=True)
+            st.dataframe(df_conf, width="stretch")
 
         if st.button("🔄 Recompute Benchmarks on Test Set", key="btn_recompute_bench"):
             with st.spinner("Running full evaluation across test set..."):
@@ -594,14 +594,14 @@ if model_ready:
                     list(stats["per_class"].items()),
                     columns=["Class", "Samples"]
                 ).sort_values("Samples", ascending=False)
-                st.dataframe(df_fb, use_container_width=True, height=260)
+                st.dataframe(df_fb, width="stretch", height=260)
             else:
                 st.info("No feedback samples recorded yet. Draw characters in Tab 1 and click 'Correct' or 'Submit Correction' to collect samples!")
 
         with col_fb_action:
             st.markdown("##### ⚡ Retrain Model with Feedback")
             st.caption("Incorporates all user feedback samples with sample weight = 4.0x into the ensemble.")
-            if st.button("🔄 Retrain Ensemble with User Feedback", key="btn_run_feedback_retrain", use_container_width=True):
+            if st.button("🔄 Retrain Ensemble with User Feedback", key="btn_run_feedback_retrain", width="stretch"):
                 with st.spinner("Retraining ensemble across base dataset + user feedback..."):
                     val_acc, n_samples, is_promoted = retrain_ensemble_with_feedback()
                     if is_promoted:
@@ -615,4 +615,4 @@ if model_ready:
             st.markdown("##### 🕒 Recent Feedback Entries")
             df_rec = pd.DataFrame(stats["recent"])[["timestamp", "true_label", "predicted_label", "was_correct", "stroke_count"]]
             df_rec["was_correct"] = df_rec["was_correct"].map({"1": "✅ Correct", "0": "❌ Corrected"})
-            st.dataframe(df_rec, use_container_width=True)
+            st.dataframe(df_rec, width="stretch")
