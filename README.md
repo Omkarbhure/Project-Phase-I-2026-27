@@ -97,7 +97,4 @@ streamlit run src/app.py
 
 Open your browser and navigate to `http://localhost:8501`.
 
----
 
-## 📜 License
-MIT License.
