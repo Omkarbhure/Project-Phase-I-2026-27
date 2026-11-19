@@ -1,4 +1,4 @@
-# 🔤 Handwritten Character & Symbol Recognition Using Soft Voting Ensemble
+# 🔤 Handwritten Character Recognition Using Ensemble Learning
 
 A machine learning web application for recognizing handwritten characters ($43$ classes total: Digits $0–9$, Uppercase & Lowercase Letters $A–Z$, and Math/Special Symbols $+$, $-$, $*$, $/$, $=$, $?$, $!$) using a **Calibrated Soft Voting Ensemble** combining Logistic Regression, Random Forest, and a Deep Multi-Layer Perceptron Neural Network (MLP), with dedicated UI/UX separation (HTML/CSS) and real-time input validation.
 
